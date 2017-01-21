@@ -2,12 +2,14 @@ pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
 
-cls()
 
+-- Drawing utils
 function point(x, y)
    rect(x, y, x + 1, y + 1)
 end
 
+
+-- Sparks
 sparks = {}
 
 function createSpark(x, y)
@@ -31,6 +33,12 @@ function drawSpark(s)
    end
 end
 
+
+-- Bullets
+bullets={{},{}}
+
+
+-- Gun
 gun1 = {
    -- Main wave
    amp = 20,
@@ -51,12 +59,13 @@ gun1 = {
    t = 1
 }
 
+-- a block
 b1 = { x = 40,
        y = 60,
        w = 10,
        h = 10 }
 
-function collision(x, y, box)
+function pointCollision(x, y, box)
    return x > box.x and x < box.x + box.w and
           y > box.y and y < box.y + box.h
 end
@@ -70,12 +79,9 @@ function drawGun(g)
       x = g.x + i
       y = g.y + yOffset
       point(x, y)
-      if collision(x, y, b1) then
+      if pointCollision(x, y, b1) then
          createSpark(x, y)         
          break
-         for i = 0, 5 do
-            
-         end
       end
    end
    g.t += g.speed
