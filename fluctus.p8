@@ -62,7 +62,7 @@ function create_player(no,x,y)
  }
 end
 
-c_max_charge=20
+c_max_charge = 20
 function create_gun()
    return {
       -- on/off
@@ -82,7 +82,7 @@ function create_gun()
       dir = 1,
       length = 30,
       spacing = 3,
-      speed = 1,
+      speed = 0.5,
       -- Charging
       charge = c_max_charge,
       max_charge = c_max_charge,
@@ -281,7 +281,8 @@ function create_bullet(gun, x, y)
    b = {
       x = x,
       y = y,
-      col = 8
+      col = 8,
+      hit = false
    }
    add(gun.bullets, b)
    return b
@@ -361,6 +362,7 @@ bullet_collisions(player)
   then
    sfx(c_sfx_hit)
    take_damage(player)
+   bullet.hit = true
    for i = 0, 5 do
       create_spark(bullet.x, bullet.y)
    end
@@ -536,8 +538,10 @@ end
 function update_gun(g)
    if g.shooting then   
       if g.i <= g.length then
-         g.i += 1
-         newBullet = create_bullet(g, g.x + g.i * g.spacing, g.y)
+         g.i += g.speed
+         if g.i > #g.bullets then
+            newBullet = create_bullet(g, g.x + g.i * g.spacing, g.y)
+         end
       end
    else
       for bullet in all(g.bullets) do
@@ -555,8 +559,6 @@ function update_gun(g)
    yscale = 0 -- to keep shots close to the gun at similar y
    
    for b in all(g.bullets) do
-      i += 1
-
       if yscale < 1 then
          yscale += 0.1
       end
@@ -569,18 +571,19 @@ function update_gun(g)
       b.x = 4 + g.x + g.dir * i * g.spacing
       b.y = 2 + g.y + yOffset
 
-      -- if point_collision(b.x, b.y, b1) then         
-      --    create_spark(b.x, b.y)            
-      --    g.i = i
+      if b.hit then
+         g.i = i - 4
+         if g.i < 1 then
+            g.i = 1
+         end
+         hit = true
+      end
 
-      --    for bi = 1, #g.bullets do
-      --       if bi >= g.i then
-      --          del(g.bullets, g.bullets[bi])
-      --       end
-      --    end
+      if hit then
+         del(g.bullets, b)
+      end
 
-      --    break
-      -- end
+      i += 1
    end
 end
 
