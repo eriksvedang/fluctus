@@ -37,9 +37,9 @@ c_map1={
 c_map_side=16
 
 function _init()
- bullets={{},{}}
  current_map=c_map1
  create_environment()
+ players = { player1, player2 }
  music(c_music_game)
 end
 
@@ -64,10 +64,33 @@ end
 
 c_max_charge=20
 function create_gun()
- return {
-  charge=c_max_charge,
-  max_charge=c_max_charge,
- }
+   return {
+      -- on/off
+      shoot = true,
+      -- Main wave
+      amp = 30,
+      freq = 0.4,
+      mod = 1.9,
+      -- Second order wave
+      miniAmp = 5,
+      miniFreq = 0.75,
+      miniMod = 0.75,
+      -- Start position
+      x = 0,
+      y = 64,
+      -- Where will the gun shoot
+      dir = 1,
+      length = 30,
+      spacing = 3,
+      speed = 1,
+      -- Charging
+      charge = c_max_charge,
+      max_charge = c_max_charge,
+      -- Internal
+      i = 1,
+      t = 1,
+      bullets = {},
+   }
 end
 
 function create_environment()
@@ -182,13 +205,18 @@ end
 function _update()
  update_player(player1)
  update_player(player2)
- update_bullets()
 end
 
 function update_player(player)
  control(player)
  physics(player)
  collisions(player)
+
+ player.gun.x = player.x
+ player.gun.y = player.y
+ player.gun.dir = player.dir
+ 
+ update_gun(player.gun)
  recharge_gun(player)
  invincibility(player)
 end
@@ -199,7 +227,7 @@ function control(player)
  and player.dx==0 then
   shoot(player)
  else
-  player.is_shooting=false
+  player.gun.shooting=false
  end
  
  if not btn(5,player.no)
@@ -233,7 +261,7 @@ function adv_walk_count(player)
 end
 
 function shoot(player)
- player.is_shooting=true
+ player.gun.shooting=true
 
  if player.dir==c_rgt then
   xoffs=6
@@ -242,12 +270,6 @@ function shoot(player)
  end
  gun=player.gun
  if gun.charge>0 then
-  bullet=create_bullet(
-   player.dir,
-   player.x+xoffs,
-   player.y+5)
-  add(bullets[player.no+1],
-      bullet)
   gun.charge-=1
   if stat(16)~=c_sfx_shoot then
    sfx(c_sfx_shoot,0)
@@ -255,13 +277,14 @@ function shoot(player)
  end
 end
 
-function create_bullet(dir,x,y)
- return {
-  dir=dir,
-  x=x,y=y,
-  dx=3,
-  col=8
- }
+function create_bullet(gun, x, y)
+   b = {
+      x = x,
+      y = y,
+      col = 8
+   }
+   add(gun.bullets, b)
+   return b
 end
 
 function physics(player)
@@ -322,8 +345,10 @@ bullet_collisions(player)
  end
  
  p=((player.no+1)%2)+1
- for bullet in all(bullets[p])
+ 
+ for bullet in all(players[p].gun.bullets)
  do
+    sfx(c_sfx_debug)
   if rect_intersect(
       player.x,
       player.x+7,
@@ -336,6 +361,9 @@ bullet_collisions(player)
   then
    sfx(c_sfx_hit)
    take_damage(player)
+   for i = 0, 5 do
+      create_spark(bullet.x, bullet.y)
+   end
    return
   end
  end
@@ -497,29 +525,63 @@ function in_range(a,b1,b2)
  return a>=b1 and a<=b2
 end
 
-function update_bullets()
- for p=1,2 do
-  for bullet in 
-  all(bullets[p]) do
-   update_bullet(bullet)
-   if bullet.x>136 
-   or bullet.x<-8 then
-    del(bullets[p],bullet)
-   end
-  end
- end
-end
-
-function update_bullet(bullet)
- bullet.x+=bullet.dir*bullet.dx
-end
-
 function recharge_gun(player)
- if not player.is_shooting then
+ if not player.gun.shooting then
   player.gun.charge=
    min(player.gun.charge+1,
        player.gun.max_charge)
  end
+end
+
+function update_gun(g)
+   if g.shooting then   
+      if g.i <= g.length then
+         g.i += 1
+         newBullet = create_bullet(g, g.x + g.i * g.spacing, g.y)
+      end
+   else
+      for bullet in all(g.bullets) do
+         del(g.bullets, bullet)
+         g.i = 1
+      end
+   end
+
+   g.t += 0.033
+
+   print(#g.bullets)
+
+   hit = false
+   i = 1
+   yscale = 0 -- to keep shots close to the gun at similar y
+   
+   for b in all(g.bullets) do
+      i += 1
+
+      if yscale < 1 then
+         yscale += 0.1
+      end
+      
+      yOffset =
+         (sin(g.freq + (i/30) * g.mod + 0.25) * g.amp +
+          sin(g.t * g.miniFreq + (i/30) * g.miniMod) * g.miniAmp)
+         * yscale
+
+      b.x = 4 + g.x + g.dir * i * g.spacing
+      b.y = 2 + g.y + yOffset
+
+      -- if point_collision(b.x, b.y, b1) then         
+      --    create_spark(b.x, b.y)            
+      --    g.i = i
+
+      --    for bi = 1, #g.bullets do
+      --       if bi >= g.i then
+      --          del(g.bullets, g.bullets[bi])
+      --       end
+      --    end
+
+      --    break
+      -- end
+   end
 end
 
 function invincibility(player)
@@ -537,7 +599,9 @@ function _draw()
  draw_player(player1)
  draw_player2()
  draw_environment()
- draw_bullets()
+ draw_gun(player1.gun)
+ draw_gun(player2.gun)
+ foreach(sparks, drawSpark)
  draw_charges()
  draw_healths()
 end
@@ -562,7 +626,7 @@ function draw_player(player)
  if (player.invincibility%4)==1
  then
   sprite=c_nothing_spr
- elseif player.is_shooting then
+ elseif player.gun.shooting then
   sprite=player.sprs.shoot
  elseif player.in_air then
   if player.dy<0 then
@@ -644,13 +708,10 @@ function draw_environment()
  end
 end
 
-function draw_bullets()
- for p=1,2 do
-  for bullet in all(bullets[p])
-  do
-   draw_bullet(bullet)
-  end
- end
+function draw_gun(g)
+   for b in all(g.bullets) do
+      draw_bullet(b)
+   end
 end
 
 function draw_bullet(bullet)
@@ -659,6 +720,37 @@ function draw_bullet(bullet)
           1,
           bullet.col)
 end
+
+-- Drawing utils
+function point(x, y)
+   rect(x, y, x + 1, y + 1)
+end
+
+
+-- Sparks
+sparks = {}
+
+function create_spark(x, y)
+   rx = rnd(100) * 0.01
+   ry = rnd(100) * 0.01
+   add(sparks, {
+          x = x,
+          y = y,
+          vx = -1 + 2 * rx,
+          vy = -1 * 2 * ry,
+   })
+end
+
+function drawSpark(s)
+   point(s.x, s.y)
+   s.x += s.vx
+   s.y += s.vy
+   s.vy += 0.2
+   if s.y > 120 then
+      del(sparks, s)
+   end
+end
+
 __gfx__
 0000000000666600006666000066660000000000000000000e080000077777700777777000000000000000000000000000000000000000000000000000000000
 000000000662626006626260066262600000000000000000e7888000760666677000fff700000000000000000000000000000000000000000000000000000000
