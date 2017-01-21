@@ -601,7 +601,7 @@ function _draw()
  draw_environment()
  draw_gun(player1.gun)
  draw_gun(player2.gun)
- foreach(sparks, drawSpark)
+ draw_sparks()
  draw_charges()
  draw_healths()
 end
@@ -642,6 +642,11 @@ function draw_player(player)
  spr(sprite,
      player.x,player.y,
      1,n_y_sprs,should_flip)
+end
+
+function draw_sparks()
+   color(10)
+   foreach(sparks, drawSpark)
 end
 
 function draw_charges()
