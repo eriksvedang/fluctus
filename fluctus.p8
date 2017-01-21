@@ -536,6 +536,7 @@ end
 
 function die(player)
  explode(player)
+ win_p_no=((player.no+1)%2)+1
  player=0
  dead_count=180
  music(-1)
@@ -904,6 +905,12 @@ function draw_dead()
  draw_healths()
  foreach(explosions,
          draw_explosion)
+ if dead_count<=120 then
+  rectfill(38,51,90,57,0)
+  print(
+   "player "..win_p_no.." wins",
+   39,52,7)
+ end
 end
 
 function draw_explosion(ex)
