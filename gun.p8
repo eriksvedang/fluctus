@@ -28,68 +28,39 @@ function drawSpark(s)
    s.x += s.vx
    s.y += s.vy
    s.vy += 0.2
-   if s.y > 110 then
+   if s.y > 120 then
       del(sparks, s)
    end
 end
 
 
 -- Bullets
-bullets={{},{}}
-
-function create_bullet(dir, x, y)
+function create_bullet(gun, x, y)
    b = {
-      dir = dir,
       x = x,
       y = y,
-      dx = 3,
       col = 8
    }
-   add(bullets[1], b)
+   add(gun.bullets, b)
    return b
-end
-
-function draw_bullets()
-   for p=1,2 do
-      for bullet in all(bullets[p])
-      do
-         draw_bullet(bullet)
-      end
-   end
 end
 
 function draw_bullet(bullet)
    circfill(bullet.x, bullet.y, 1, bullet.col)
+   --point(bullet.x, bullet.y)
 end
-
-function update_bullets()
-   for p=1,2 do
-      for bullet in 
-      all(bullets[p]) do
-         update_bullet(bullet)
-         if bullet.x>136 
-         or bullet.x<-8 then
-            del(bullets[p],bullet)
-         end
-      end
-   end
-end
-
-function update_bullet(bullet)
-   bullet.x += bullet.dir * bullet.dx
-end
-
-
 
 -- Gun
 c_max_charge=20
 
 function create_gun()
    return {
+      -- on/off
+      shoot = true,
       -- Main wave
       amp = 30,
       freq = 0.4,
-      mod = 0.6,
+      mod = 1.9,
       -- Second order wave
       miniAmp = 5,
       miniFreq = 0.75,
@@ -100,7 +71,7 @@ function create_gun()
       -- Where will the gun shoot
       dir = 1,
       length = 30,
-      spacing = 4,
+      spacing = 3,
       speed = 1,
       -- Charging
       charge = c_max_charge,
@@ -112,77 +83,86 @@ function create_gun()
    }
 end
 
--- a block
-b1 = { x = 70,
-       y = 90,
-       w = 10,
-       h = 10 }
-
-function pointCollision(x, y, box)
-   return x > box.x and x < box.x + box.w and
-          y > box.y and y < box.y + box.h
-end
-
 function update_gun(g)
-   if g.i < g.length then
-      g.i += 1
-      newBullet = create_bullet(0, g.x + g.i * g.spacing, g.y)
-      add(g.bullets, newBullet)
+   if g.shoot then   
+      if g.i <= g.length then
+         g.i += 1
+         newBullet = create_bullet(g, g.x + g.i * g.spacing, g.y)
+      end
    end
 
    g.t += 0.033
 
-   --print(#g.bullets)
+   print(#g.bullets)
 
    hit = false
    i = 1
    yscale = 0 -- to keep shots close to the gun at similar y
    
    for b in all(g.bullets) do
-      i += 0.033
+      i += 1
 
       if yscale < 1 then
          yscale += 0.1
       end
       
       yOffset =
-         (sin(g.freq + i * g.mod + 0.25) * g.amp +
-          sin(g.t * g.miniFreq + i * g.miniMod) * g.miniAmp) * yscale
+         (sin(g.freq + (i/30) * g.mod + 0.25) * g.amp +
+          sin(g.t * g.miniFreq + (i/30) * g.miniMod) * g.miniAmp)
+         * yscale
 
       b.y = g.y + yOffset
 
-      if pointCollision(b.x, b.y, b1) then
-         create_spark(b.x, b.y)         
-         hit = true
-      end
+      if point_collision(b.x, b.y, b1) then
+         
+         create_spark(b.x, b.y)            
+         g.i = i
 
-      -- if hit then
-      --    del(g.bullets, b)
-      -- end
+         for bi = 1, #g.bullets do
+            if bi >= g.i then
+               del(g.bullets, g.bullets[bi])
+            end
+         end
+
+         break
+      end
    end
 end
+
+function draw_gun(g)
+   for b in all(g.bullets) do
+      draw_bullet(b)
+   end
+end
+
+-- a block
+b1 = { x = 55,
+       y = 30,
+       w = 10,
+       h = 20 }
+
+function point_collision(x, y, box)
+   return x > box.x and x < box.x + box.w and
+          y > box.y and y < box.y + box.h
+end
+
+
+
 
 t = 0
 gun1 = create_gun()
 
--- create_bullet(1, 10, 30)
--- create_bullet(-1, 100, 60)
-
 function _draw()
    cls()
-   --draw_gun(gun1)
    update_gun(gun1)
+   draw_gun(gun1)
 
    color(10)
    foreach(sparks, drawSpark)
 
-   --update_bullets()
-   color(1)
-   draw_bullets()
-
    color(11)
    t += 0.01
-   b1.y += sin(t) * 1
+   b1.y += 0.4
    rectfill(b1.x, b1.y, b1.x + b1.w, b1.y + b1.h)
 end
 
