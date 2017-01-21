@@ -339,36 +339,34 @@ function collisions(player)
  ceiling_collisions(player)
 end
 
-function 
-bullet_collisions(player)
- if player.invincibility>0 then
-  return
- end
- 
- p=((player.no+1)%2)+1
- 
- for bullet in all(players[p].gun.bullets)
- do
-    sfx(c_sfx_debug)
-  if rect_intersect(
-      player.x,
-      player.x+7,
-      player.y,
-      player.y+7,
-      bullet.x,
-      bullet.x,
-      bullet.y,
-      bullet.y)
-  then
-   sfx(c_sfx_hit)
-   take_damage(player)
-   bullet.hit = true
-   for i = 0, 5 do
-      create_spark(bullet.x, bullet.y)
+function bullet_collisions(player)   
+   p = ((player.no + 1) % 2) + 1
+   
+   for bullet in all(players[p].gun.bullets)
+   do
+      sfx(c_sfx_debug)
+      if rect_intersect(
+         player.x,
+         player.x+7,
+         player.y,
+         player.y+7,
+         bullet.x,
+         bullet.x,
+         bullet.y,
+         bullet.y)
+      then
+         sfx(c_sfx_hit)
+         if player.invincibility < 1 then
+            take_damage(player)
+         end
+         
+         bullet.hit = true
+         for i = 0, 5 do
+            create_spark(bullet.x, bullet.y)
+         end
+         return
+      end
    end
-   return
-  end
- end
 end
 
 function take_damage(player)
