@@ -69,12 +69,12 @@ function create_gun()
       shoot = true,
       -- Main wave
       amp = 30,
-      freq = 0.4,
-      mod = 1.9,
+      freq = 1.9,
+      mod = 0,
       -- Second order wave
-      miniAmp = 5,
+      miniAmp = 3,
       miniFreq = 0.75,
-      miniMod = 0.75,
+      miniMod = 2,
       -- Start position
       x = 0,
       y = 64,
@@ -562,8 +562,8 @@ function update_gun(g)
       end
       
       yOffset =
-         (sin(g.freq + (i/30) * g.mod + 0.25) * g.amp +
-          sin(g.t * g.miniFreq + (i/30) * g.miniMod) * g.miniAmp)
+         (sin(g.t * g.mod + (i/30) * g.freq + 0.25) * g.amp +
+          sin(g.t * g.miniMod + (i/30) * g.miniFreq) * g.miniAmp)
          * yscale
 
       b.x = 4 + g.x + g.dir * i * g.spacing
