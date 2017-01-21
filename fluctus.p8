@@ -69,7 +69,7 @@ function create_gun()
       shoot = true,
       -- Main wave
       amp = 30,
-      freq = 1.9,
+      freq = 0.5,
       mod = 0,
       -- Second order wave
       miniAmp = 3,
@@ -81,8 +81,8 @@ function create_gun()
       -- Where will the gun shoot
       dir = 1,
       length = 30,
-      spacing = 3,
-      speed = 0.5,
+      spacing = 2,
+      speed = 1, -- max 1
       -- Charging
       charge = c_max_charge,
       max_charge = c_max_charge,
@@ -216,8 +216,8 @@ function update_player(player)
  player.gun.y = player.y
  player.gun.dir = player.dir
  
- update_gun(player.gun)
  recharge_gun(player)
+ update_gun(player.gun)
  invincibility(player)
 end
 
@@ -261,20 +261,22 @@ function adv_walk_count(player)
 end
 
 function shoot(player)
- player.gun.shooting=true
+   if player.dir == c_rgt then
+      xoffs = 6
+   else
+      xoffs = 2
+   end
 
- if player.dir==c_rgt then
-  xoffs=6
- else
-  xoffs=2
- end
- gun=player.gun
- if gun.charge>0 then
-  gun.charge-=1
-  if stat(16)~=c_sfx_shoot then
-   sfx(c_sfx_shoot,0)
-  end
- end
+   gun = player.gun
+   if gun.charge > 0.0 then
+      gun.charge -= 1
+      if stat(16)~=c_sfx_shoot then
+         sfx(c_sfx_shoot,0)
+      end
+      gun.shooting = true
+   else
+      gun.shooting = false
+   end
 end
 
 function create_bullet(gun, x, y)
@@ -415,23 +417,36 @@ solid_beneath(player)
  return {false,-1}
 end
 
-function 
-wall_collisions(player)
- solid=
-  solid_right(player)
- is_solid=solid[1]
- new_x=solid[2]
- if is_solid then
-  stop_walking(player,new_x)
- end
- 
- solid=
-  solid_left(player)
- is_solid=solid[1]
- new_x=solid[2]
- if is_solid then
-  stop_walking(player,new_x)
- end
+function wall_collisions(player)
+   
+   for bullet in all(player.gun.bullets) do
+      for wall in all(walls) do
+         if bullet.x > wall.x and
+            bullet.x < wall.x + 8 and
+            bullet.y > wall.y and
+            bullet.y < wall.y + 8
+         then
+            bullet.hit = true
+            for i = 0, 5 do
+               create_spark(bullet.x, bullet.y)
+            end
+         end            
+      end
+   end
+   
+   solid = solid_right(player)
+   is_solid = solid[1]
+   new_x = solid[2]
+   if is_solid then
+      stop_walking(player,new_x)
+   end
+   
+   solid = solid_left(player)
+   is_solid = solid[1]
+   new_x=solid[2]
+   if is_solid then
+      stop_walking(player,new_x)
+   end
 end
 
 function solid_left(player)
@@ -534,7 +549,7 @@ function recharge_gun(player)
 end
 
 function update_gun(g)
-   if g.shooting then   
+   if g.shooting and g.charge > 1 then   
       if g.i <= g.length then
          g.i += g.speed
          if g.i > #g.bullets then
@@ -546,6 +561,7 @@ function update_gun(g)
          del(g.bullets, bullet)
          g.i = 1
       end
+      return
    end
 
    g.t += 0.033
@@ -886,6 +902,7 @@ ddddddddcddddddccddddddddddddddddddddddc0000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
 __gff__
 0000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000800000000000000000000000000000001030303030000000000000000000000000202000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
