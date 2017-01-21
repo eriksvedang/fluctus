@@ -977,7 +977,7 @@ function draw_powerups()
 end
 
 function draw_sparks()
-   color(10)
+   color(flr(rnd(16)))
    foreach(sparks, drawspark)
 end
 
